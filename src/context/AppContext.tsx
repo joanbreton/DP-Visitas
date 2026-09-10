@@ -47,6 +47,7 @@ interface AppContextProps {
   checkoutVisitor: (id: string) => { success: boolean };
   deleteVisitorRecord: (id: string) => void;
   addDepartment: (name: string) => { success: boolean; error?: string };
+  updateDepartment: (id: string, name: string) => { success: boolean; error?: string };
   removeDepartment: (id: string) => { success: boolean };
   updateCMSConfig: (newConfig: CMSConfig) => void;
   addAdmin: (admin: Omit<AdminUser, 'id' | 'createdAt' | 'twoFactorSecret'>) => { success: boolean; error?: string };
@@ -480,6 +481,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
+  const updateDepartment = (id: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return { success: false, error: 'El nombre del departamento no puede estar vacío.' };
+
+    const exists = departments.some((d) => d.id !== id && d.name.toLowerCase() === trimmed.toLowerCase());
+    if (exists) return { success: false, error: 'Ya existe otro departamento con este nombre.' };
+
+    setDepartments((prev) => prev.map((d) => (d.id === id ? { ...d, name: trimmed } : d)));
+    updateDoc(doc(db, 'departments', id), { name: trimmed }).catch((err) => {
+      console.error('Error actualizando departamento en Firestore:', err);
+    });
+
+    return { success: true };
+  };
+
   const removeDepartment = (id: string) => {
     setDepartments((prev) => prev.filter((d) => d.id !== id));
     deleteDoc(doc(db, 'departments', id)).catch((err) => {
@@ -659,6 +675,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteVisitorRecord,
         clearAllVisitors,
         addDepartment,
+        updateDepartment,
         removeDepartment,
         updateCMSConfig,
         addAdmin,

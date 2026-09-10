@@ -12,6 +12,8 @@ import {
   Settings2,
   Database,
   Trash2,
+  Pencil,
+  X,
   Search,
   Download,
   FileText,
@@ -53,6 +55,7 @@ export const AdminDashboard: React.FC = () => {
     dbClusters,
     updateCMSConfig,
     addDepartment,
+    updateDepartment,
     removeDepartment,
     addAdmin,
     updateAdmin,
@@ -80,6 +83,8 @@ export const AdminDashboard: React.FC = () => {
 
   // Department Management state
   const [newDeptName, setNewDeptName] = useState('');
+  const [editingDeptId, setEditingDeptId] = useState<string | null>(null);
+  const [editingDeptName, setEditingDeptName] = useState('');
   const [deptMessage, setDeptMessage] = useState({ type: '', text: '' });
 
   // Add Admin Account state
@@ -241,6 +246,34 @@ export const AdminDashboard: React.FC = () => {
     } else {
       setDeptMessage({ type: 'error', text: res.error || 'No se pudo agregar.' });
     }
+  };
+
+  const handleStartEditDept = (dept: Department) => {
+    setEditingDeptId(dept.id);
+    setEditingDeptName(dept.name);
+    setDeptMessage({ type: '', text: '' });
+  };
+
+  const handleSaveEditDept = (id: string) => {
+    setDeptMessage({ type: '', text: '' });
+    if (!editingDeptName.trim()) {
+      setDeptMessage({ type: 'error', text: 'El nombre no puede estar vacío.' });
+      return;
+    }
+
+    const res = updateDepartment(id, editingDeptName);
+    if (res.success) {
+      setEditingDeptId(null);
+      setEditingDeptName('');
+      setDeptMessage({ type: 'success', text: 'Departamento actualizado correctamente.' });
+    } else {
+      setDeptMessage({ type: 'error', text: res.error || 'No se pudo actualizar el departamento.' });
+    }
+  };
+
+  const handleCancelEditDept = () => {
+    setEditingDeptId(null);
+    setEditingDeptName('');
   };
 
   const handleValidateCredential = (code: string) => {
@@ -1641,17 +1674,65 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="space-y-1.5 max-h-[220px] overflow-y-auto scrollbar-thin">
                     {departments.map(d => (
-                      <div key={d.id} className="flex items-center justify-between p-2.5 border border-slate-100 bg-slate-50/50 hover:bg-slate-50 rounded-lg text-xs font-medium">
-                        <span className="text-slate-800">{d.name}</span>
-                        <button
-                          onClick={() => removeDepartment(d.id)}
-                          disabled={departments.length <= 1}
-                          className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 disabled:opacity-30 rounded-md cursor-pointer transition-colors"
-                          title="Eliminar Departamento"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                      editingDeptId === d.id ? (
+                        <div key={d.id} className="p-1.5 border border-blue-200 bg-blue-50/40 rounded-lg text-xs font-medium">
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              handleSaveEditDept(d.id);
+                            }}
+                            className="flex items-center gap-1.5 w-full"
+                          >
+                            <input
+                              type="text"
+                              autoFocus
+                              value={editingDeptName}
+                              onChange={(e) => setEditingDeptName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Escape') handleCancelEditDept();
+                              }}
+                              className="flex-1 min-w-0 px-2.5 py-1 bg-white border border-blue-300 rounded-md text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+                              placeholder="Nombre del departamento"
+                            />
+                            <button
+                              type="submit"
+                              className="p-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md cursor-pointer transition-colors shadow-2xs"
+                              title="Guardar cambios"
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelEditDept}
+                              className="p-1 hover:bg-slate-200 text-slate-500 rounded-md cursor-pointer transition-colors"
+                              title="Cancelar"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </form>
+                        </div>
+                      ) : (
+                        <div key={d.id} className="flex items-center justify-between p-2.5 border border-slate-100 bg-slate-50/50 hover:bg-slate-50 rounded-lg text-xs font-medium">
+                          <span className="text-slate-800 truncate pr-2">{d.name}</span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => handleStartEditDept(d)}
+                              className="p-1 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-md cursor-pointer transition-colors"
+                              title="Editar Departamento"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => removeDepartment(d.id)}
+                              disabled={departments.length <= 1}
+                              className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 disabled:opacity-30 rounded-md cursor-pointer transition-colors"
+                              title="Eliminar Departamento"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )
                     ))}
                   </div>
                 </div>
