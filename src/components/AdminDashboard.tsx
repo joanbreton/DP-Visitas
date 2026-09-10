@@ -40,6 +40,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Visitor, AdminUser, Department } from '../types';
+import { VisitorValidationCard } from './VisitorValidationCard';
+import { findVisitorByCodeOrCedula } from '../utils/qrHelper';
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -248,19 +250,14 @@ export const AdminDashboard: React.FC = () => {
     setScannedCode(code.trim());
     
     setTimeout(() => {
-      const found = visitors.find(v => 
-        v.credentialCode?.toUpperCase() === code.trim().toUpperCase() || 
-        v.cedula.replace(/[-]/g, '') === code.trim().replace(/[-]/g, '') ||
-        v.cedula === code.trim()
-      );
-      
+      const found = findVisitorByCodeOrCedula(visitors, code);
       if (found) {
         setValidationResult(found);
       } else {
         setValidationResult('not_found');
       }
       setIsScanning(false);
-    }, 850);
+    }, 400);
   };
 
   const handleCheckoutFromValidator = (visitorId: string) => {
@@ -1178,12 +1175,12 @@ export const AdminDashboard: React.FC = () => {
                       {isScanning ? (
                         <>
                           <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                          <span>Procesando Escaneo...</span>
+                          <span>Procesando Validación...</span>
                         </>
                       ) : (
                         <>
                           <QrCode className="h-3.5 w-3.5" />
-                          <span>Escanear / Validar</span>
+                          <span>Validar Código</span>
                         </>
                       )}
                     </button>
@@ -1280,9 +1277,9 @@ export const AdminDashboard: React.FC = () => {
                         <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-inner">
                           <QrCode className="h-7 w-7" />
                         </div>
-                        <h4 className="font-bold text-slate-700 text-sm">Dispositivo Listo para Escanear</h4>
+                        <h4 className="font-bold text-slate-700 text-sm">Dispositivo Listo para Validar</h4>
                         <p className="text-xs text-slate-400 mt-2">
-                          Utilice un código de credencial alfanumérico o cédula en la izquierda, o simule el pase rápido de un visitante para iniciar la comprobación de seguridad.
+                          Utilice un código de credencial alfanumérico o cédula en la izquierda, o seleccione una visita activa en el simulador para comprobar el estado.
                         </p>
                       </div>
                     ) : validationResult === 'not_found' ? (
@@ -1300,150 +1297,12 @@ export const AdminDashboard: React.FC = () => {
                         </p>
                       </div>
                     ) : (
-                      /* Visitor Badge Validation Card */
-                      <div className="w-full max-w-md bg-white rounded-2xl border-2 border-slate-200 shadow-md overflow-hidden relative">
-                        {/* Status Ribbon */}
-                        <div
-                          className={`py-3 px-5 text-center font-mono text-xs font-bold tracking-widest text-white uppercase flex items-center justify-center gap-2 ${
-                            validationResult.status === 'inside'
-                              ? 'bg-emerald-600 animate-pulse'
-                              : 'bg-slate-700'
-                          }`}
-                        >
-                          <ShieldCheck className="h-4 w-4" />
-                          <span>
-                            {validationResult.status === 'inside'
-                              ? 'ACCESO AUTORIZADO - ACTIVO'
-                              : 'VISITANTE YA RETIRADO'}
-                          </span>
-                        </div>
-
-                        {/* Physical layout */}
-                        <div className="p-6 space-y-5">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="space-y-1">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Nombre del Visitante</span>
-                              <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight">
-                                {validationResult.firstName} {validationResult.lastName}
-                              </h3>
-                              {validationResult.companyName && (
-                                <div className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                                  <Briefcase className="h-3 w-3" />
-                                  <span>{validationResult.companyName}</span>
-                                </div>
-                              )}
-                              <p className="text-xs text-slate-500 font-mono">
-                                Cédula: <span className="font-semibold text-slate-700">{validationResult.cedula}</span>
-                              </p>
-                            </div>
-
-                            {/* Badge QR representation */}
-                            <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 flex flex-col items-center justify-center shrink-0">
-                              <img
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(
-                                  `${window.location.origin}/?badge=${encodeURIComponent(validationResult.credentialCode || validationResult.id)}` +
-                                  `&fn=${encodeURIComponent(validationResult.firstName)}` +
-                                  `&ln=${encodeURIComponent(validationResult.lastName)}` +
-                                  `&c=${encodeURIComponent(validationResult.cedula)}` +
-                                  `&d=${encodeURIComponent(validationResult.department)}` +
-                                  `&co=${encodeURIComponent(validationResult.companyName || '')}` +
-                                  `&n=${encodeURIComponent(validationResult.notes || '')}` +
-                                  `&h=${encodeURIComponent(validationResult.hostName)}` +
-                                  `&t=${encodeURIComponent(validationResult.checkInTime)}`
-                                )}`}
-                                alt="QR Credencial"
-                                referrerPolicy="no-referrer"
-                                className="w-20 h-20 bg-white"
-                              />
-                              <span className="text-[9px] font-bold font-mono tracking-wider mt-1 text-slate-600 uppercase">
-                                {validationResult.credentialCode || 'DP-VISITAS'}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Highlighted Core Destination / Person Details */}
-                          <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-3.5">
-                            <div className="flex items-start gap-3">
-                              <div className="w-8 h-8 bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                                <User className="h-4.5 w-4.5" />
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Persona a Quien Visita (Anfitrión)</p>
-                                <p className="font-bold text-slate-800 text-sm mt-0.5">{validationResult.hostName}</p>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-start gap-3 pt-3 border-t border-slate-200/50">
-                              <div className="w-8 h-8 bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                                <Building className="h-4.5 w-4.5" />
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Departamento que va a visitar</p>
-                                <p className="font-bold text-slate-800 text-sm mt-0.5">{validationResult.department}</p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Visitation Details Grid */}
-                          <div className="grid grid-cols-2 gap-4 pt-1 text-xs">
-                            <div>
-                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Hora de Entrada</p>
-                              <p className="font-mono font-medium text-slate-700 mt-0.5">
-                                {new Date(validationResult.checkInTime).toLocaleString()}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Hora de Salida</p>
-                              <p className="font-mono font-medium text-slate-700 mt-0.5">
-                                {validationResult.checkOutTime
-                                  ? new Date(validationResult.checkOutTime).toLocaleString()
-                                  : <span className="text-emerald-600 font-bold uppercase text-[10px]">Aún en Planta</span>}
-                              </p>
-                            </div>
-                          </div>
-
-                          {validationResult.notes && (
-                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs">
-                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Motivo de Visita</p>
-                              <p className="text-slate-600 mt-0.5 italic">"{validationResult.notes}"</p>
-                            </div>
-                          )}
-
-                          {/* Actions Inside Card */}
-                          <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(validationResult.credentialCode || '');
-                                setCopiedCodeId(validationResult.id);
-                                setTimeout(() => setCopiedCodeId(null), 2000);
-                              }}
-                              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200 active:scale-95"
-                            >
-                              {copiedCodeId === validationResult.id ? (
-                                <>
-                                  <Check className="h-3.5 w-3.5 text-emerald-600" />
-                                  <span className="text-emerald-700">Copiado</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="h-3.5 w-3.5" />
-                                  <span>Copiar Código</span>
-                                </>
-                              )}
-                            </button>
-
-                            {validationResult.status === 'inside' && (
-                              <button
-                                onClick={() => handleCheckoutFromValidator(validationResult.id)}
-                                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm active:scale-95 ml-auto"
-                              >
-                                <LogOut className="h-3.5 w-3.5" />
-                                <span>Registrar Salida</span>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                      /* Visitor Badge Validation Card matching image */
+                      <VisitorValidationCard
+                        visitor={validationResult}
+                        onCheckout={() => handleCheckoutFromValidator(validationResult.id)}
+                        onPrint={() => window.print()}
+                      />
                     )}
                   </div>
                 </div>

@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Search, LogOut, Clock, ShieldCheck, UserMinus, FileText } from 'lucide-react';
+import { Search, LogOut, Clock, ShieldCheck, UserMinus, FileText, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const ActiveVisitors: React.FC = () => {
@@ -146,15 +146,30 @@ export const ActiveVisitors: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Checkout Button */}
-                  <button
-                    onClick={() => handleCheckout(visitor.id)}
-                    className="text-red-500 hover:text-red-700 text-[10px] font-bold uppercase border border-red-200 hover:bg-red-50/50 rounded px-2.5 py-1.5 transition-all cursor-pointer flex items-center gap-1 shrink-0"
-                    title="Registrar Salida del Visitante"
-                  >
-                    <LogOut className="h-3 w-3" />
-                    <span>Salida</span>
-                  </button>
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('badge', visitor.credentialCode || visitor.id);
+                        window.history.pushState({}, '', url.toString());
+                        window.dispatchEvent(new PopStateEvent('popstate'));
+                      }}
+                      className="text-slate-600 hover:text-blue-600 text-[10px] font-bold uppercase border border-slate-200 bg-white hover:bg-blue-50 rounded px-2 py-1.5 transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                      title="Ver Ficha / Carnet de Validación"
+                    >
+                      <Eye className="h-3 w-3" />
+                      <span>Ficha</span>
+                    </button>
+                    <button
+                      onClick={() => handleCheckout(visitor.id)}
+                      className="text-red-500 hover:text-red-700 text-[10px] font-bold uppercase border border-red-200 hover:bg-red-50/50 rounded px-2.5 py-1.5 transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                      title="Registrar Salida del Visitante"
+                    >
+                      <LogOut className="h-3 w-3" />
+                      <span>Salida</span>
+                    </button>
+                  </div>
                 </motion.div>
               ))}
             </div>

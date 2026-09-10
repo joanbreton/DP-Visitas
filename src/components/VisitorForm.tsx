@@ -20,12 +20,14 @@ import {
   X,
   Check,
   Copy,
-  ShieldCheck
+  ShieldCheck,
+  Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Visitor } from '../types';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { generateVisitorBadgeUrl } from '../utils/qrHelper';
 
 // Function to convert OKLCH to RGB
 const oklchToRgb = (l: number, c: number, h: number): [number, number, number] => {
@@ -539,21 +541,13 @@ export const VisitorForm: React.FC = () => {
                 {/* QR Code and Credentials Identifier Code */}
                 <div className="flex flex-col items-center justify-center p-4 bg-slate-50 border border-slate-100 rounded-xl">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                      `${window.location.origin}/?badge=${encodeURIComponent(newlyRegistered.credentialCode || newlyRegistered.id)}` +
-                      `&fn=${encodeURIComponent(newlyRegistered.firstName)}` +
-                      `&ln=${encodeURIComponent(newlyRegistered.lastName)}` +
-                      `&c=${encodeURIComponent(newlyRegistered.cedula)}` +
-                      `&d=${encodeURIComponent(newlyRegistered.department)}` +
-                      `&co=${encodeURIComponent(newlyRegistered.companyName || '')}` +
-                      `&n=${encodeURIComponent(newlyRegistered.notes || '')}` +
-                      `&h=${encodeURIComponent(newlyRegistered.hostName)}` +
-                      `&t=${encodeURIComponent(newlyRegistered.checkInTime)}`
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                      generateVisitorBadgeUrl(newlyRegistered)
                     )}`}
                     alt="QR Credencial"
                     crossOrigin="anonymous"
                     referrerPolicy="no-referrer"
-                    className="w-36 h-36 bg-white shadow-inner p-1"
+                    className="w-36 h-36 bg-white shadow-inner p-1 rounded-lg"
                   />
                   
                   <div className="flex items-center gap-2 mt-4 print:hidden">
@@ -576,6 +570,7 @@ export const VisitorForm: React.FC = () => {
                       )}
                     </button>
                   </div>
+
                   {/* Print-only identifier code */}
                   <div className="hidden print:block mt-3 text-center">
                     <span className="font-mono text-slate-800 text-sm font-bold tracking-wider">
@@ -623,24 +618,42 @@ export const VisitorForm: React.FC = () => {
                 </div>
 
                 {/* Printable Action Buttons */}
-                <div className="flex gap-2.5 pt-2 print:hidden">
+                <div className="space-y-2 pt-2 print:hidden">
                   <button
-                    onClick={handleDownloadPDF}
-                    disabled={isGeneratingPDF}
-                    className="py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5 flex-1 active:scale-95 disabled:cursor-not-allowed"
-                  >
-                    <Printer className="h-3.5 w-3.5" />
-                    <span>{isGeneratingPDF ? 'Generando PDF...' : 'Imprimir Carnet'}</span>
-                  </button>
-                  <button
+                    type="button"
                     onClick={() => {
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('badge', newlyRegistered.credentialCode || newlyRegistered.id);
+                      window.history.pushState({}, '', url.toString());
+                      window.dispatchEvent(new PopStateEvent('popstate'));
                       setShowCredentialModal(false);
                       setNewlyRegistered(null);
                     }}
-                    className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 flex-1 active:scale-95 border border-slate-200"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
                   >
-                    <span>Entendido, Cerrar</span>
+                    <Eye className="h-3.5 w-3.5" />
+                    <span>Ver Ficha de Información / Validación</span>
                   </button>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDownloadPDF}
+                      disabled={isGeneratingPDF}
+                      className="py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5 flex-1 active:scale-95 disabled:cursor-not-allowed"
+                    >
+                      <Printer className="h-3.5 w-3.5" />
+                      <span>{isGeneratingPDF ? 'Generando PDF...' : 'Imprimir Carnet'}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowCredentialModal(false);
+                        setNewlyRegistered(null);
+                      }}
+                      className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 flex-1 active:scale-95 border border-slate-200"
+                    >
+                      <span>Cerrar</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
