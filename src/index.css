@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom Scrollbar */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 5px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #e4e4e7;
+  border-radius: 9999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #d4d4d8;
+}
+
+/* Print Settings for PDF and Printer */
+@media print {
+  /* Set page rules */
+  @page {
+    size: auto;
+    margin: 0mm;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: visible !important;
+  }
+
+  /* Hide absolutely everything in the body by default using visibility */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Only show the printable badge and its inner elements */
+  #printable-badge,
+  #printable-badge * {
+    visibility: visible !important;
+  }
+
+  /* Layout and dimensions of the badge when printing */
+  #printable-badge {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 360px !important;
+    max-width: 360px !important;
+    height: auto !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 12px !important;
+    background-color: #ffffff !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    display: block !important;
+  }
+
+  /* Force background colors and images in all browsers */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Hide print buttons and extra copy buttons specifically */
+  .print\:hidden {
+    display: none !important;
+  }
+}
+

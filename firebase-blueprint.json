@@ -1,0 +1,170 @@
+{
+  "entities": {
+    "Visitor": {
+      "title": "Visitor",
+      "description": "Visitor entry and credential record in DP-VISITAS",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the visitor"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the visitor"
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the visitor"
+        },
+        "cedula": {
+          "type": "string",
+          "description": "National ID / Cédula number"
+        },
+        "department": {
+          "type": "string",
+          "description": "Department or area being visited"
+        },
+        "hostName": {
+          "type": "string",
+          "description": "Name of the host or person visited"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["inside", "checked_out"],
+          "description": "Current presence status"
+        },
+        "checkInTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Check-in ISO timestamp"
+        },
+        "checkOutTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Check-out ISO timestamp"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Purpose of the visit or notes"
+        },
+        "credentialCode": {
+          "type": "string",
+          "description": "Credential code displayed on badge QR"
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Company name if visitor represents a company"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "cedula",
+        "department",
+        "hostName",
+        "status",
+        "checkInTime"
+      ]
+    },
+    "Department": {
+      "title": "Department",
+      "description": "Department or branch area in the facility",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Department unique identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Department title"
+        },
+        "count": {
+          "type": "number",
+          "description": "Number of visits received"
+        }
+      },
+      "required": ["id", "name", "count"]
+    },
+    "CMSConfig": {
+      "title": "CMSConfig",
+      "description": "Reception display and capacity configuration",
+      "type": "object",
+      "properties": {
+        "welcomeTitle": {
+          "type": "string"
+        },
+        "welcomeSubtitle": {
+          "type": "string"
+        },
+        "announcement": {
+          "type": "string"
+        },
+        "showAnnouncement": {
+          "type": "boolean"
+        },
+        "receptionHours": {
+          "type": "string"
+        },
+        "allowedCapacity": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "welcomeTitle",
+        "welcomeSubtitle",
+        "announcement",
+        "showAnnouncement",
+        "receptionHours",
+        "allowedCapacity"
+      ]
+    },
+    "RealtimeNotification": {
+      "title": "RealtimeNotification",
+      "description": "Access alert for new check-in",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "visitorName": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "department": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "read": {
+          "type": "boolean"
+        }
+      },
+      "required": ["id", "visitorName", "hostName", "department", "timestamp", "read"]
+    }
+  },
+  "firestore": {
+    "/visitors/{visitorId}": {
+      "entity": "Visitor",
+      "description": "Secure storage collection of visitor entries"
+    },
+    "/departments/{departmentId}": {
+      "entity": "Department",
+      "description": "Organizational departments"
+    },
+    "/config/{configId}": {
+      "entity": "CMSConfig",
+      "description": "Global kiosk and capacity configurations"
+    },
+    "/notifications/{notificationId}": {
+      "entity": "RealtimeNotification",
+      "description": "Real-time access audit notifications"
+    }
+  }
+}
