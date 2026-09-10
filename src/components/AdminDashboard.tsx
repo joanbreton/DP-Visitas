@@ -56,6 +56,7 @@ export const AdminDashboard: React.FC = () => {
     updateAdmin,
     deleteAdmin,
     deleteVisitorRecord,
+    clearAllVisitors,
     logoutAdmin,
     simulateDbSync,
     checkoutVisitor,
@@ -319,6 +320,22 @@ export const AdminDashboard: React.FC = () => {
     setTimeout(() => {
       setIsSyncing(false);
     }, 1000);
+  };
+
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+
+  const handleClearAllVisitors = async () => {
+    const confirmed = window.confirm(
+      '¿Está seguro de que desea eliminar permanentemente TODOS los registros de visitas de la base de datos Firestore? Esta acción no se puede deshacer.'
+    );
+    if (!confirmed) return;
+
+    setIsDeletingAll(true);
+    try {
+      await clearAllVisitors();
+    } finally {
+      setIsDeletingAll(false);
+    }
   };
 
   // Export report to CSV
@@ -996,6 +1013,17 @@ export const AdminDashboard: React.FC = () => {
                   >
                     <Download className="h-3.5 w-3.5" />
                     <span>Exportar Reporte (CSV)</span>
+                  </button>
+
+                  {/* Clear All Visitors Button */}
+                  <button
+                    onClick={handleClearAllVisitors}
+                    disabled={visitors.length === 0 || isDeletingAll}
+                    className="py-2 px-3.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 disabled:opacity-40 disabled:pointer-events-none text-rose-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
+                    title="Eliminar todos los registros de visitas en Firestore"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>{isDeletingAll ? 'Eliminando...' : 'Eliminar Todo'}</span>
                   </button>
                 </div>
               </div>

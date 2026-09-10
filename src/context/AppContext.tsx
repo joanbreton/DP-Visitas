@@ -58,6 +58,7 @@ interface AppContextProps {
   simulateDbSync: () => void;
   markNotificationAsRead: (id: string) => void;
   clearAllNotifications: () => void;
+  clearAllVisitors: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
@@ -65,8 +66,18 @@ const AppContext = createContext<AppContextProps | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Local caching states initialized from localStorage or defaults
   const [visitors, setVisitors] = useState<Visitor[]>(() => {
-    const stored = localStorage.getItem('dp_visitas_visitors');
-    return stored ? JSON.parse(stored) : DEFAULT_VISITORS;
+    try {
+      const stored = localStorage.getItem('dp_visitas_visitors');
+      if (!stored) return [];
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.some((v: any) => v.id && v.id.startsWith('vis-10'))) {
+        localStorage.removeItem('dp_visitas_visitors');
+        return [];
+      }
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
   });
 
   const [departments, setDepartments] = useState<Department[]>(() => {
@@ -108,7 +119,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   // Seeding refs to prevent duplicate bootstrap loops
-  const hasSeededVisitorsRef = useRef(false);
   const hasSeededDeptRef = useRef(false);
   const hasSeededConfigRef = useRef(false);
   const hasSeededAdminsRef = useRef(false);
@@ -147,22 +157,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // CLOUD FIRESTORE REAL-TIME SYNCHRONIZATION
   // =========================================================================
   useEffect(() => {
-    // 1. Visitors Collection Listener
+    // 1. Visitors Collection Listener (strictly synced with database)
     const visitorsUnsub = onSnapshot(
       collection(db, 'visitors'),
       (snapshot) => {
         setIsFirestoreConnected(true);
-        if (snapshot.empty && !hasSeededVisitorsRef.current) {
-          hasSeededVisitorsRef.current = true;
-          // Seed initial visitors into Firestore so the database is populated and persistent
-          const itemsToSeed = visitors.length > 0 ? visitors : DEFAULT_VISITORS;
-          itemsToSeed.forEach((item) => {
-            setDoc(doc(db, 'visitors', item.id), item).catch((err) => {
-              console.error('Error seeding visitor to Firestore:', err);
-            });
-          });
-        } else if (!snapshot.empty) {
-          hasSeededVisitorsRef.current = true;
+        if (snapshot.empty) {
+          setVisitors([]);
+        } else {
           const remoteVisitors: Visitor[] = [];
           snapshot.forEach((docSnap) => {
             remoteVisitors.push(docSnap.data() as Visitor);
@@ -615,6 +617,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 1000);
   };
 
+  const clearAllVisitors = async () => {
+    setVisitors([]);
+    localStorage.removeItem('dp_visitas_visitors');
+    try {
+      const snap = await getDocs(collection(db, 'visitors'));
+      if (!snap.empty) {
+        const batch = writeBatch(db);
+        snap.forEach((docSnap) => {
+          batch.delete(docSnap.ref);
+        });
+        await batch.commit();
+      }
+
+      // Reset department visitor counts
+      const deptSnap = await getDocs(collection(db, 'departments'));
+      for (const d of deptSnap.docs) {
+        await updateDoc(doc(db, 'departments', d.id), { count: 0 });
+      }
+      setDepartments((prev) => prev.map((d) => ({ ...d, count: 0 })));
+    } catch (err) {
+      console.error('Error eliminando registros de visitantes en Firestore:', err);
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -631,6 +657,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addVisitor,
         checkoutVisitor,
         deleteVisitorRecord,
+        clearAllVisitors,
         addDepartment,
         removeDepartment,
         updateCMSConfig,
